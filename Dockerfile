@@ -17,9 +17,6 @@ RUN addgroup -g 900 mysql \
 
 ONBUILD USER mysql
 ONBUILD RUN apk --no-cache add mariadb-client
-# && mysql_install_db --user=mysql \
-# && mysqld --user=mysql & \
-# && mysql_secure_installation -S $_sock
 
 VOLUME [ $_etc, $_root, $_log ]
 ENTRYPOINT [ "runme.sh" ]
