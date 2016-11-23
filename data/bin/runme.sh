@@ -5,12 +5,12 @@ _this=aquaron/mariadb
 getvols() { 
     local _file="/proc/self/mountinfo"
 
-    local _p1=$(grep $_etc $_file | cut -f 4 -d" ")
-    local _p2=$(grep $_log $_file | cut -f 4 -d" ")
-    _vol=$(grep $_root $_file | cut -f 4 -d" ")
+    _localetc=$(grep $_etc $_file | grep -v '/volumes/' | cut -f 4 -d" ")
+    _locallog=$(grep $_log $_file | grep -v '/volumes/' | cut -f 4 -d" ")
+    _localdata=$(grep $_root $_file | grep -v '/volumes/' | cut -f 4 -d" ")
 
-    if [[ "$_p1" ]] && [[ "$_p2" ]] && [[ "$_vol" ]]; then
-        echo "-v $_p1:$_etc -v $_p2:$_log -v $_vol:$_root"
+    if [[ "$_localetc" ]] && [[ "$_locallog" ]] && [[ "$_localdata" ]]; then
+        echo "-v $_localetc:$_etc -v $_locallog:$_log -v $_localdata:$_root"
     fi
 }
 
@@ -27,7 +27,7 @@ fi
 _run="docker run -t --rm ${_vols} ${_ports} ${_this}"
 
 HELP=`cat <<EOT
-Usage: docker run -t --rm ${_ports} -v /data:${_root} -v /etc/mysql:${_etc} -v /var/log:${_log} ${_this} <command>
+Usage: docker run -t --rm ${_vols} ${_ports} ${_this} <command>
 
    init      - initialize directories if they're empty
    bootstrap - create new database (run -it)
@@ -57,10 +57,37 @@ _start="docker run ${_vols} ${_ports} -d ${_this}"
 
 assert_ok() { if [ "$?" = 1 ]; then hint "Abort"; exit 1; fi; }
 
+write_systemd_file() {
+    local _name="$1"
+    local _map="$2"
+    local _port="$3"
+
+    local _service_file="${_etc}/docker-${_name}.service"
+    local _script="${_etc}/install-systemd.sh"
+
+    cat ${_datadir}/templ/systemd.service \
+        | write_template.sh name \""${_name}"\" map \""${_map}"\" port \""${_port}"\" \
+        > ${_service_file}
+
+    echo "Created ${_service_file}"
+
+    cat ${_datadir}/templ/install.sh \
+        | write_template.sh name \""$1"\" \
+        > ${_script}
+
+    chmod 755 ${_script}
+
+    echo "Created ${_script}"
+}
+
 run_init() {
     if [ "$(is_empty ${_etc})" ]; then
         cp -R ${_datadir}/etc/* ${_etc}/
         chown -R mysql:mysql $_etc $_root $_log
+
+        apk --no-cache add bash
+        write_systemd_file "mariadb" "${_vols}" "${_ports}" 
+        apk del bash
     fi
 }
 
@@ -119,11 +146,13 @@ install_client() {
 
         chown -R mysql:mysql $_etc $_root $_log
 
+        echo "CREATE USER 'root'@'172.17.0.1' IDENTIFIED BY '${_pw}'" | mysql mysql
+
         hint "Shutting down mysql"
         mysqladmin shutdown
 
         hint "DONE!"
-        echo "Run container normally to start MariaDB!"
+        echo "Check install.sh in etc dir"
     fi
 }
 
