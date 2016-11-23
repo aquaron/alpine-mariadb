@@ -18,14 +18,14 @@ The image tries to match UID & GID permission on local machine.
 Launches `mysqld` by default. If configuration is not found, initializes with default configuration.
 `runme.sh` accepts these commands:
 
-    | Command   | Description                                     
-    | --------- | ----------------------------------------------- 
-    | init      | initialize directories if they're empty
-    | bootstrap | create new database (calls `init`)
-    | daemon    | run in non-detached mode
-    | start     | start mariadb server
-    | stop      | quick mariadb shutdown (requires `mysql-client`
-    | kill      | killall msyql
+| Command   | Description                                     |
+| --------- | ----------------------------------------------- |
+| init      | initialize directories if they're empty         |
+| bootstrap | create new database (calls `init`)              |
+| daemon    | run in non-detached mode                        |
+| start     | start mariadb server                            |
+| stop      | quick mariadb shutdown (requires `mysql-client` |
+| kill      | killall msyql                                   |
 
 ## Configurations
 
