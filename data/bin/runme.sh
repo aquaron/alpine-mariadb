@@ -72,7 +72,7 @@ write_systemd_file() {
     echo "Created ${_service_file}"
 
     cat ${_datadir}/templ/install.sh \
-        | write_template.sh name \""$1"\" \
+        | write_template.sh name \""${_name}"\" \
         > ${_script}
 
     chmod 755 ${_script}

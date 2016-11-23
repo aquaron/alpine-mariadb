@@ -1,4 +1,4 @@
-# alpine-mariadb
+# MariaDB on Alpine
 
 Simple MariaDB server on Alpine.
 The image tries to match UID & GID permission on local machine.
@@ -13,30 +13,30 @@ The image tries to match UID & GID permission on local machine.
         -h mariadb -d \
             aquaron/mariadb
 
-## runme.sh
+## `runme.sh`
 
 Launches `mysqld` by default. If configuration is not found, initializes with default configuration.
 `runme.sh` accepts these commands:
 
-| Command   | Description                                     |
-| --------- | ----------------------------------------------- |
-| init      | initialize directories if they're empty         |
-| bootstrap | create new database (calls `init`)              |
-| daemon    | run in non-detached mode                        |
-| start     | start mariadb server                            |
-| stop      | quick mariadb shutdown (requires `mysql-client` |
-| kill      | killall msyql                                   |
+| Command   | Description                                      |
+| --------- | ------------------------------------------------ |
+| init      | initialize directories if they're empty          |
+| bootstrap | create new database (calls `init`)               |
+| daemon    | run in non-detached mode                         |
+| start     | start mariadb server                             |
+| stop      | quick mariadb shutdown (requires `mysql-client`) |
+| kill      | killall msyql                                    |
 
 ## Configurations
 
 ### Enabled configurations
 
-#### system.cnf
+#### `system.cnf`
 
 Holds all system configuration that pertain to the container, you should only change this
 if you have multiple instances of the container running.
 
-#### master-slave.cnf
+#### `master-slave.cnf`
 
 Container is set as a master as default.
 
@@ -44,25 +44,25 @@ Container is set as a master as default.
 
 To enable, remove `-disabled` from the filename.
 
-#### large.cnf-disabled    
+#### `large.cnf-disabled`
 
 For larger systems, enable this file.
 
-#### small.cnf-disabled
+#### `small.cnf-disabled`
 
 Systems smaller than 1GB memory.
 
-#### secured.cnf-disabled
+#### `secured.cnf-disabled`
 
 Encrypt log file.
 
 ### Auto generated configurations
 
-#### passwd.cnf
+#### `passwd.cnf`
 
 Contains the auto-generated root password.
 
-#### keybufsiz.cnf
+#### `keybufsiz.cnf`
 
 Sets configuration `key_buffer_size` to 125% of the current system's memory per MariaDB's 
 [recommendation](https://mariadb.com/kb/en/mariadb/optimizing-key_buffer_size/).

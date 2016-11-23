@@ -3,7 +3,9 @@
 declare -A vars=()
 
 while [[ $# -gt 1 ]]; do
-    vars[$1]="$2"
+    val="$2"
+    val="${val%\"}"
+    vars[$1]="${val#\"}"
     shift
     shift
 done
