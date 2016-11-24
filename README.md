@@ -69,16 +69,16 @@ Sets configuration `key_buffer_size` to 125% of the current system's memory per 
 
 # Auto Start Container
 
-Bootstraping the server also yield 2 files `install.sh` and `docker-mariadb.service` they're
+Bootstraping the server also yield 2 files `install-systemd.sh` and `docker-mariadb.service` they're
 located in where you map your directory to `/etc/mysql`. After configuration, check this directory
-and run `install.sh` it will use `systemd`. 
+and run `install-systemd.sh` it will use `systemd`. 
 
 This script is based on Docker's 
 [documentation](https://docs.docker.com/engine/admin/host_integration/) on auto starting containers.
 
 Installing the service by running:
 
-    ./install.sh
+    ./install-systemd.sh
 
 Follow instruction. After everything looks good you can enable the service by running:
 
