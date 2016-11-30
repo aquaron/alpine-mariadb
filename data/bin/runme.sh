@@ -65,6 +65,8 @@ write_systemd_file() {
     local _service_file="${_etc}/docker-${_name}.service"
     local _script="${_etc}/install-systemd.sh"
 
+    apk --no-cache add bash
+
     cat ${_datadir}/templ/systemd.service \
         | write_template.sh name \""${_name}"\" map \""${_map}"\" port \""${_port}"\" \
         > ${_service_file}
@@ -78,6 +80,8 @@ write_systemd_file() {
     chmod 755 ${_script}
 
     echo "Created ${_script}"
+
+    apk del bash
 }
 
 run_init() {
@@ -85,9 +89,7 @@ run_init() {
         cp -R ${_datadir}/etc/* ${_etc}/
         chown -R mysql:mysql $_etc $_root $_log
 
-        apk --no-cache add bash
         write_systemd_file "mariadb" "${_vols}" "${_ports}" 
-        apk del bash
     fi
 }
 
@@ -141,12 +143,13 @@ install_client() {
         (echo -e "\nY\n${_pw}\n${_pw}\nY\nY") | mysql_secure_installation -S $_sock
 
         hint "Creating cfgs"
-        echo -e "[mysql]\npassword=$_pw\n[client]\npassword=$_pw" > $_etc/conf.d/passwd.cnf
         echo -e "[mysqld]\nkey_buffer_size=${_keybuf}" > $_etc/conf.d/keybufsiz.cnf
+        echo -e "[mysql]\npassword=$_pw\n[client]\npassword=$_pw" > $_etc/conf.d/passwd.cnf
 
         chown -R mysql:mysql $_etc $_root $_log
 
         echo "CREATE USER 'root'@'172.17.0.1' IDENTIFIED BY '${_pw}'" | mysql mysql
+		echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'172.17.0.1'" | mysql mysql
 
         hint "Shutting down mysql"
         mysqladmin shutdown
