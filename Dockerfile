@@ -10,7 +10,7 @@ ENV \
 
 RUN addgroup -g 900 mysql \
  && adduser -h $_root -g "MySQL" -u 900 -G mysql -D mysql \
- && apk --no-cache add mariadb \
+ && apk --no-cache add mariadb tzdata \
  && mkdir $_log \
  && chown -R mysql:mysql $_etc $_log $_root \
  && mv /data/bin/* /usr/bin

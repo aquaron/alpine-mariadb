@@ -35,6 +35,7 @@ Usage: docker run -t --rm ${_vols} ${_ports} ${_this} <command>
    start     - start mariadb server
    stop      - quick mariadb shutdown
 
+EOT
 `
 
 if [[ $# -lt 1 ]] || [[ ! "${_vols}" ]]; then echo "$HELP"; exit 1; fi
@@ -65,7 +66,9 @@ write_systemd_file() {
     local _service_file="${_etc}/docker-${_name}.service"
     local _script="${_etc}/install-systemd.sh"
 
-    apk --no-cache add bash
+    if [ "$(grep ^ID= /etc/os-release)" = 'ID=alpine' ]; then
+        apk --no-cache add bash
+    fi
 
     cat ${_datadir}/templ/systemd.service \
         | write_template.sh name \""${_name}"\" map \""${_map}"\" port \""${_port}"\" \
@@ -81,7 +84,9 @@ write_systemd_file() {
 
     echo "Created ${_script}"
 
-    apk del bash
+    if [ "$(grep ^ID= /etc/os-release)" = 'ID=alpine' ]; then
+        apk del bash
+    fi
 }
 
 run_init() {
@@ -149,7 +154,10 @@ install_client() {
         chown -R mysql:mysql $_etc $_root $_log
 
         echo "CREATE USER 'root'@'172.17.0.1' IDENTIFIED BY '${_pw}'" | mysql mysql
-		echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'172.17.0.1'" | mysql mysql
+        echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'172.17.0.1'" | mysql mysql
+
+        hint "Adding timezone info"
+        mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql mysql
 
         hint "Shutting down mysql"
         mysqladmin shutdown
