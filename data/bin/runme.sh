@@ -85,7 +85,7 @@ write_systemd_file() {
     echo "Created ${_script}"
 
     if [ "$(grep ^ID= /etc/os-release)" = 'ID=alpine' ]; then
-        apk del bash
+        apk del --purge bash
     fi
 }
 
@@ -117,8 +117,14 @@ install_client() {
     run_init
 
     if [ "$(is_empty ${_root})" ]; then
-        hint "Geting mysql-client, openssl"
-        apk add --no-cache mysql-client openssl
+        hint "Geting mysql-client, openssl, tzdata"
+
+        if [ "$(grep ^ID= /etc/os-release)" = 'ID=alpine' ]; then
+            apk add --no-cache --virtual .deps mysql-client openssl tzdata
+        else
+            apt-get update
+            apt-get install -y mysql-client openssl tzdata
+        fi
 
         hint "Installing default DB"
         mysql_install_db --user=mysql
