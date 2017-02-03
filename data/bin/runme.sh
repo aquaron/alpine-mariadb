@@ -195,8 +195,7 @@ case "${_cmd}" in
 
     stop) 
         hint "${_cmd} server"
-        _pw=$(cat $_etc/conf.d/passwd.cnf | grep -e '^password' | uniq | sed -e 's/^[^=]\+=//')
-        mysqladmin shutdown --user=root --password="$_pw"
+        pkill mysqld
         ;;
 
     kill)
