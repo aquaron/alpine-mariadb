@@ -1,33 +1,33 @@
 #!/bin/sh
 
-_this=aquaron/mariadb
+get_path() {
+    echo "$(grep $1 /proc/self/mountinfo | grep -v '/volumes/' | cut -f 4,9 -d" " | sed -e 's/^\([^ ]\+\)[ ]\+\([^ ]\+\)$/\2\1/')"
+}
 
-getvols() { 
-    local _file="/proc/self/mountinfo"
-
-    _localetc=$(grep $_etc $_file | grep -v '/volumes/' | cut -f 4 -d" ")
-    _locallog=$(grep $_log $_file | grep -v '/volumes/' | cut -f 4 -d" ")
-    _localdata=$(grep $_root $_file | grep -v '/volumes/' | cut -f 4 -d" ")
+getvols() {
+    _localetc="$(get_path $_etc)"
+    _locallog="$(get_path $_log)"
+    _localdata="$(get_path $_root)"
 
     if [[ "$_localetc" ]] && [[ "$_locallog" ]] && [[ "$_localdata" ]]; then
         echo "-v $_localetc:$_etc -v $_locallog:$_log -v $_localdata:$_root"
     fi
 }
 
-_vols=$(getvols)
+_vols="$(getvols)"
 _ports="-p 3306:3306"
 
 is_empty() { if [[ ! -d "$1" ]] || [[ ! "$(ls -A $1)" ]]; then echo "yes"; fi }
 
-if [ ! "${_vols}" ]; then 
+if [ ! "${_vols}" ]; then
     echo "ERROR: you need run Docker with the -v parameter (see documentation)"
     exit 1
 fi
 
-_run="docker run -t --rm ${_vols} ${_ports} ${_this}"
+_run="docker run -t --rm ${_vols} ${_ports} ${_image}"
 
 HELP=`cat <<EOT
-Usage: docker run -t --rm ${_vols} ${_ports} ${_this} <command>
+Usage: docker run -t --rm ${_vols} ${_ports} ${_image} <command>
 
    init      - initialize directories if they're empty
    bootstrap - create new database (run -it)
@@ -54,7 +54,7 @@ _cmd=$1
 _host=$2
 _datadir=/data
 
-_start="docker run ${_vols} ${_ports} -d ${_this}"
+_start="docker run ${_vols} ${_ports} -d ${_image}"
 
 assert_ok() { if [ "$?" = 1 ]; then hint "Abort"; exit 1; fi; }
 
@@ -65,27 +65,23 @@ write_systemd_file() {
 
     local _service_file="${_etc}/docker-${_name}.service"
     local _script="${_etc}/install-systemd.sh"
+    local _template_file="${_datadir}/templ/systemd.service"
 
     if [ "$(grep ^ID= /etc/os-release)" = 'ID=alpine' ]; then
-        apk --no-cache add bash
+        apk -q --no-cache add bash
     fi
 
-    cat ${_datadir}/templ/systemd.service \
-        | write_template.sh name \""${_name}"\" map \""${_map}"\" port \""${_port}"\" \
+    echo "$(write_template.sh $_template_file name \""${_name}"\" map \""${_map}"\" port \""${_port}"\" image \""${_image}"\")" \
         > ${_service_file}
 
     echo "Created ${_service_file}"
 
-    cat ${_datadir}/templ/install.sh \
-        | write_template.sh name \""${_name}"\" \
-        > ${_script}
-
+    cp ${_datadir}/templ/install.sh ${_script}
     chmod 755 ${_script}
-
     echo "Created ${_script}"
 
     if [ "$(grep ^ID= /etc/os-release)" = 'ID=alpine' ]; then
-        apk del --purge bash
+        apk --no-cache -q del --purge bash
     fi
 }
 
@@ -94,7 +90,7 @@ run_init() {
         cp -R ${_datadir}/etc/* ${_etc}/
         chown -R mysql:mysql $_etc $_root $_log
 
-        write_systemd_file "mariadb" "${_vols}" "${_ports}" 
+        write_systemd_file ${HOSTNAME} "${_vols}" "${_ports}"
     fi
 }
 
@@ -120,10 +116,10 @@ install_client() {
         hint "Geting mysql-client, openssl, tzdata"
 
         if [ "$(grep ^ID= /etc/os-release)" = 'ID=alpine' ]; then
-            apk add --no-cache --virtual .deps mysql-client openssl tzdata
+            apk add -q --no-cache --virtual .deps mysql-client openssl tzdata
         else
-            apt-get update
-            apt-get install -y mysql-client openssl tzdata
+            apt-get update -q
+            apt-get install -qy mysql-client openssl tzdata
         fi
 
         hint "Installing default DB"
@@ -134,7 +130,7 @@ install_client() {
         if [ ! "$(mysqld_is_running)" ]; then
             hint "Starting mysql"
             mysqld --user=mysql &
- 
+
             for _i in $(seq 0 9); do
                 if [ "$(mysqld_is_running)" = "1" ]; then
                     break
@@ -145,7 +141,7 @@ install_client() {
 
         local _pw=$(get_pw)
         local _keybuf=$(get_mem_25pc)
- 
+
         if [[ ! "$_pw" ]] || [[ ! "$_keybuf" ]]; then hint "Abort!"; exit 1; fi
 
         echo $_pw
@@ -169,7 +165,7 @@ install_client() {
         mysqladmin shutdown
 
         hint "DONE!"
-        echo "Check install.sh in etc dir"
+        echo "Check install-systemd.sh in etc dir"
     fi
 }
 
@@ -183,7 +179,7 @@ case "${_cmd}" in
         install_client
         ;;
 
-    start) 
+    start)
         hint "starting server"
         mysqld --user=mysql &
         ;;
@@ -193,7 +189,7 @@ case "${_cmd}" in
         mysqld --user=mysql
         ;;
 
-    stop) 
+    stop)
         hint "${_cmd} server"
         pkill mysqld
         ;;
@@ -202,7 +198,7 @@ case "${_cmd}" in
         killall mysqld
         ;;
 
-    *) 
+    *)
         echo "ERROR: Command '${_cmd}' not recognized"
         ;;
 esac

@@ -5,9 +5,10 @@ After=docker.service
 
 [Service]
 Restart=always
-ExecStart=/usr/bin/docker run ${map} ${port} --name ${name} -h ${name} aquaron/${name}
+ExecStartPre=/usr/bin/docker pull ${image}
+ExecStart=/usr/bin/docker run ${map} ${port} --name ${name} -h ${name} ${image}
 ExecStop=/usr/bin/docker stop -t 2 ${name}
 ExecStopPost=/usr/bin/docker rm -f ${name}
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
