@@ -1,5 +1,17 @@
 FROM alpine:latest
-MAINTAINER Paul Pham <docker@aquaron.com>
+
+ARG BUILD_DATE
+
+LABEL maintainer="docker@aquaron.com" \
+ org.label-schema.build-date=$BUILD_DATE \
+ org.label-schema.docker.cmd="docker run --name -p 3316:3316 -v /var/lib/mysql:/var/lib/mysql -v /var/log/mysql:/var/log/mysql -v /etc/mysql:/etc/mysql -h mariadb -d aquaron/mariadb" \
+ org.label-schema.description="MariaDB" \
+ org.label-schema.name="mariadb" \
+ org.label-schema.url="https://mariadb.org/" \
+ org.label-schema.vcs-url="https://github.com/aquaron/mariadb" \
+ org.label-schema.vendor="aquaron" \
+ org.label-schema.version="5.5.5"
+
 
 COPY data /data
 ENV \
